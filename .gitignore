@@ -1,0 +1,11 @@
+*~
+*swp
+data/*
+figures/*
+init/*
+results/*
+code/scripts/mat_results/*
+code/scripts/old/*
+code/slurm/figures/*
+code/slurm/outputs/*
+__pycache__
