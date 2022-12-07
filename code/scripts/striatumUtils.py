@@ -1,3 +1,5 @@
+import numpy as np
+import pandas as pd
 
 def findCorrectSequencesStartAndEndIndices(correct_sequence,
                                            transitions_data,
@@ -49,3 +51,38 @@ def findCorrectSequencesStartAndEndIndices(correct_sequence,
                 break
     return correct_sequences_start_and_end_indices
 
+
+def buildMarkedEventsInfo(trials_timing_info, trials_indices,
+                           port_numbers=np.array((2, 1, 6, 3, 7)),
+                           port_colors=np.array(("orange", "red", "green",
+                                                 "blue", "black")),
+                           stages=np.array(["IN", "OUT"]),
+                           stage_markers=["cross", "circle"]):
+    n_trials = len(trials_indices)
+    marked_events_times = [None for r in range(n_trials)]
+    marked_events_colors = [None for r in range(n_trials)]
+    marked_events_markers = [None for r in range(n_trials)]
+    for trial_index, r in enumerate(trials_indices):
+        trial_timing_info = \
+            trials_timing_info[trials_timing_info.trial == r]
+        trial_marked_events_times = []
+        trial_marked_events_colors = []
+        trial_marked_events_markers = []
+        for i in range(trial_timing_info.shape[0]):
+            trial_marked_events_times.append(
+                trial_timing_info.iloc[i]["timestamp"],
+            )
+
+            port_number_index = np.where(
+                port_numbers == trial_timing_info.iloc[i]["port"])[0].item()
+
+            trial_marked_events_colors.append(port_colors[port_number_index])
+
+            stage_index = np.where(
+                stages == trial_timing_info.iloc[i]["stage"])[0].item()
+            trial_marked_events_markers.append(stage_markers[stage_index])
+
+        marked_events_times[trial_index] = trial_marked_events_times
+        marked_events_colors[trial_index] = trial_marked_events_colors
+        marked_events_markers[trial_index] = trial_marked_events_markers
+    return marked_events_times, marked_events_colors, marked_events_markers
