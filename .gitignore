@@ -6,6 +6,9 @@ init/*
 results/*
 code/scripts/mat_results/*
 code/scripts/old/*
-code/slurm/figures/*
-code/slurm/outputs/*
+slurm/figures/*
+slurm/outputs/*
+docs/firstReport/*
+!docs/firstReport/firstReport_96129535.tex
+!docs/firstReport/firstReport_96129535.pdf
 __pycache__
