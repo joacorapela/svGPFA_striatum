@@ -13,15 +13,15 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--clusterID_to_plot", help="clusterID to plot", type=int,
                         default=-1)
-    parser.add_argument("--selected_regions",
-                        help="only use neurons from these selected regions",
-                        type=str, default="[striatum]")
+    parser.add_argument("--region_col_name",
+                        help="region column name",
+                        type=str, default="Region")
     parser.add_argument("--max_trial_duration", help="maximum trial duration",
                         type=float, default=math.inf)
-    parser.add_argument("--epoched_spikes_times_filename_pattern",
+    parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filename pattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In_regions{:s}.pickle")
+                        default="../../results/spikes_times_epochedFirst2In.pickle")
     parser.add_argument("--vline_color", help="color of vertical line",
                         type=str, default="gray")
     parser.add_argument("--trials_timing_info_filename",
@@ -31,26 +31,24 @@ def main(argv):
     parser.add_argument("--fig_filename_pattern",
                         help="spikes times figure filename pattern",
                         type=str,
-                        default="../../figures/epochedFirst2In_spikes_times_regions{:s}_neuron{:02d}_maxDuration{:f}.{:s}")
+                        default="../../figures/epochedFirst2In_spikes_times_neuron{:02d}_maxDuration{:f}.{:s}")
     args = parser.parse_args()
 
     clusterID_to_plot = args.clusterID_to_plot
-    selected_regions = args.selected_regions[1:-1].split(",")
+    region_col_name = args.region_col_name
     max_trial_duration = args.max_trial_duration
-    epoched_spikes_times_filename_pattern = args.epoched_spikes_times_filename_pattern
     vline_color = args.vline_color
+    epoched_spikes_times_filename = args.epoched_spikes_times_filename
     trials_timing_info_filename = args.trials_timing_info_filename
     fig_filename_pattern = args.fig_filename_pattern
 
     trials_timing_info = pd.read_csv(trials_timing_info_filename)
 
-    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
-    epoched_spikes_times_filename = \
-        epoched_spikes_times_filename_pattern.format(selected_regions_str)
     with open(epoched_spikes_times_filename, "rb") as f:
         load_res = pickle.load(f)
     spikes_times = load_res["spikes_times"]
     clusters_ids = load_res["clusters_ids"]
+    regions = load_res["regions"]
     trials_start_times = np.array(load_res["trials_start_times"])
     trials_end_times = np.array(load_res["trials_end_times"])
 
@@ -85,8 +83,9 @@ def main(argv):
         spikes_times_rn = spikes_times[r][neuron_index]
         trial_spikes_rates[r] = len(spikes_times_rn)/trials_durations[r]
     trial_averaged_spike_rate = trial_spikes_rates.mean()
-    title = "Neuron {:d}, Trial-Averaged Spike Rate {:f}".format(
-        clusters_ids[neuron_index], trial_averaged_spike_rate)
+    title = "Neuron {:d}, Region {:s}, Trial-Averaged Spike Rate {:f}".format(
+        clusters_ids[neuron_index], regions[neuron_index],
+        trial_averaged_spike_rate)
     fig = svGPFA.plot.plotUtilsPlotly.getSpikesTimesPlotOneNeuron(
         spikes_times=spikes_times, neuron_index=neuron_index,
         trials_indices=trials_indices,
@@ -96,16 +95,14 @@ def main(argv):
         align_event=align_event,
         title=title)
     fig.add_vline(x=0, line_color=vline_color)
-    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
     spikes_times_png_filename = fig_filename_pattern.format(
-        selected_regions_str, clusters_ids[neuron_index], max_trial_duration,
+        clusters_ids[neuron_index], max_trial_duration,
         "png")
     spikes_times_html_filename = fig_filename_pattern.format(
-        selected_regions_str, clusters_ids[neuron_index], max_trial_duration,
+        clusters_ids[neuron_index], max_trial_duration,
         "html")
     fig.write_image(spikes_times_png_filename)
     fig.write_html(spikes_times_html_filename)
-    fig.show()
 
     breakpoint()
 
