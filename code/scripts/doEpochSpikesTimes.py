@@ -8,6 +8,9 @@ import pandas as pd
 def main(argv):
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--selected_regions",
+                        help="only use neurons from these selected regions",
+                        type=str, default="[striatum]")
     parser.add_argument("--before_trial_pad",
                         help="pad (in seconds) to be added at begining of "
                         "trial before the beginning of the sequence",
@@ -25,6 +28,12 @@ def main(argv):
     parser.add_argument("--spikes_times_col_name",
                         help="column name for spikes times",
                         type=str, default="Spike_times")
+    parser.add_argument("--region_col_name",
+                        help="region column name",
+                        type=str, default="Region")
+    parser.add_argument("--cluster_id_col_name",
+                        help="cluster id column name",
+                        type=str, default="cluster_id")
     parser.add_argument("--transitions_data_filename",
                         help="transitions data filename",
                         type=str, default="../../data/Transition_data_sync.csv")
@@ -35,30 +44,35 @@ def main(argv):
                         help="correct sequences filename",
                         type=str,
                         default="../../results/correctSequencesStartAndEndIndices.csv")
-    parser.add_argument("--epoched_spikes_times_filename",
-                        help="epoched spikes times filename",
+    parser.add_argument("--epoched_spikes_times_filename_pattern",
+                        help="epoched spikes times filename pattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In.pickle")
+                        default="../../results/spikes_times_epochedFirst2In_regions{:s}.pickle")
     args = parser.parse_args()
 
+    selected_regions = args.selected_regions[1:-1].split(",")
     before_trial_pad = args.before_trial_pad
     after_trial_pad = args.after_trial_pad
     port_in_ephys_ts_col_name = args.port_in_ephys_ts_col_name
     port_out_ephys_ts_col_name = args.port_out_ephys_ts_col_name
     spikes_times_col_name = args.spikes_times_col_name
+    region_col_name = args.region_col_name
     transitions_data_filename = args.transitions_data_filename
     units_info_filename = args.units_info_filename
     correct_sequences_start_and_end_indices_filename = \
         args.correct_sequences_start_and_end_indices_filename
-    epoched_spikes_times_filename = args.epoched_spikes_times_filename
+    epoched_spikes_times_filename_pattern = \
+        args.epoched_spikes_times_filename_pattern
 
     transitions_data = pd.read_csv(transitions_data_filename)
     units_info = pd.read_csv(units_info_filename)
+    units_info = units_info[units_info[region_col_name].isin(selected_regions)]
+    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
+
     correct_seqs_start_and_end_indices = \
         pd.read_csv(correct_sequences_start_and_end_indices_filename,
                     header=None)
     n_trials = correct_seqs_start_and_end_indices.shape[0]
-    breakpoint()
     n_neurons = units_info.shape[0]
 
     epochs_times = [None for r in range(n_trials)]
@@ -79,12 +93,22 @@ def main(argv):
         trials_start_times_rel[r] = -before_trial_pad
         trials_end_times_rel[r] = trial_end_time - first_2in_time
         for n in range(n_neurons):
-            unit_spikes_times_str = units_info.loc[n, spikes_times_col_name][1:-1].split(",")
+            unit_spikes_times_str = units_info.iloc[n][spikes_times_col_name][1:-1].split(",")
             unit_spikes_times = np.array([float(unit_spike_times_str) for unit_spike_times_str in unit_spikes_times_str])
             spikes_times_rel[r][n] = unit_spikes_times[
                 np.logical_and(trial_start_time <= unit_spikes_times,
                                unit_spikes_times < trial_end_time)] - first_2in_time
-    results_to_save = {"epochs_times": epochs_times, "spikes_times": spikes_times_rel, "trials_start_times": trials_start_times_rel, "trials_end_times": trials_end_times_rel, }
+    clusters_ids = units_info[cluster_id_col_name].tolist()
+    results_to_save = {
+        "epochs_times": epochs_times,
+        "spikes_times": spikes_times_rel,
+        "trials_start_times": trials_start_times_rel,
+        "trials_end_times": trials_end_times_rel,
+        "clusters_ids": clusters_ids,
+    }
+    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
+    epoched_spikes_times_filename = \
+        epoched_spikes_times_filename_pattern.format(selected_regions_str)
     with open(epoched_spikes_times_filename, "wb") as f: pickle.dump(results_to_save, f)
 
     breakpoint()
