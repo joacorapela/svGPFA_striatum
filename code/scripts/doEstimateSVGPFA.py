@@ -23,24 +23,15 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("est_init_number", help="estimation init number",
                         type=int)
-    parser.add_argument("--selected_regions",
-                        help="only use neurons from these selected regions",
-                        type=str, default="[striatum]")
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
     parser.add_argument("--common_n_ind_points",
                         help="common number of inducing points",
                         type=int, default=9)
-    parser.add_argument("--max_trial_duration",
-                        help="maximum trial duration (secs)",
-                        type=float, default=5.0)
-    parser.add_argument("--min_neuron_trials_avg_firing_rate",
-                        help="min trials-averaged firing rate to keep a neuron",
-                        type=float, default=0.0)
-    parser.add_argument("--epoched_spikes_times_filename_pattern",
-                        help="epoched spikes times filename pattern",
+    parser.add_argument("--epoched_spikes_times_filename",
+                        help="epoched spikes times filenamepattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In_regions{:s}.pickle")
+                        default="../../results/spikes_times_epochedFirst2In.pickle")
     parser.add_argument("--est_init_config_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
@@ -61,28 +52,41 @@ def main(argv):
     args = parser.parse_args()
 
     est_init_number = args.est_init_number
-    selected_regions = args.selected_regions[1:-1].split(",")
     n_latents = args.n_latents
     common_n_ind_points = args.common_n_ind_points
-    max_trial_duration = args.max_trial_duration
-    min_neuron_trials_avg_firing_rate = args.min_neuron_trials_avg_firing_rate
-    epoched_spikes_times_filename_pattern = \
-        args.epoched_spikes_times_filename_pattern
+    epoched_spikes_times_filename = args.epoched_spikes_times_filename
     est_init_config_filename_pattern = args.est_init_config_filename_pattern
     estim_res_metadata_filename_pattern = \
         args.estim_res_metadata_filename_pattern
     model_save_filename_pattern = args.model_save_filename_pattern
 
-    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
-    epoched_spikes_times_filename = \
-        epoched_spikes_times_filename_pattern.format(selected_regions_str)
+    est_init_config_filename = est_init_config_filename_pattern.format(
+        est_init_number)
+    est_init_config = configparser.ConfigParser()
+    est_init_config.read(est_init_config_filename)
+
+    selected_regions = est_init_config["data_params"]["selected_regions"][1:-1].split(",")
+    max_trial_duration = float(est_init_config["data_params"]["max_trial_duration"])
+    min_neuron_trials_avg_firing_rate = float(est_init_config["data_params"]["min_neuron_trials_avg_firing_rate"])
 
     # get spike_times
     with open(epoched_spikes_times_filename, "rb") as f:
         load_res = pickle.load(f)
     spikes_times = load_res["spikes_times"]
+    regions = load_res["regions"]
     trials_start_times = np.array(load_res["trials_start_times"])
     trials_end_times = np.array(load_res["trials_end_times"])
+
+    n_neurons = len(regions)
+    units_to_remove = [n for n in range(n_neurons)
+                       if regions[n] not in selected_regions]
+    spikes_times = gcnu_common.utils.neuralDataAnalysis.removeUnits(
+        spikes_times = spikes_times,
+        units_to_remove=units_to_remove)
+    neurons_indices = [n for n in range(n_neurons)
+                       if n not in units_to_remove]
+    breakpoint()
+
     n_trials = len(spikes_times)
     trials_indices = np.arange(n_trials)
     n_neurons = len(spikes_times[0])
@@ -112,11 +116,6 @@ def main(argv):
         n_latents=n_latents, n_trials=n_trials, args=vars(args),
         args_info=args_info)
     #   build config file parameters specification
-    est_init_config_filename = est_init_config_filename_pattern.format(
-        est_init_number)
-    est_init_config = configparser.ConfigParser()
-    est_init_config.read(est_init_config_filename)
-
     strings_dict = gcnu_common.utils.config_dict.GetDict(
         config=est_init_config).get_dict()
     config_file_params_spec = \
