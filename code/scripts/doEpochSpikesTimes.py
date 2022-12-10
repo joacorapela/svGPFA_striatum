@@ -8,9 +8,6 @@ import pandas as pd
 def main(argv):
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--selected_regions",
-                        help="only use neurons from these selected regions",
-                        type=str, default="[striatum]")
     parser.add_argument("--before_trial_pad",
                         help="pad (in seconds) to be added at begining of "
                         "trial before the beginning of the sequence",
@@ -44,30 +41,27 @@ def main(argv):
                         help="correct sequences filename",
                         type=str,
                         default="../../results/correctSequencesStartAndEndIndices.csv")
-    parser.add_argument("--epoched_spikes_times_filename_pattern",
-                        help="epoched spikes times filename pattern",
+    parser.add_argument("--epoched_spikes_times_filename",
+                        help="epoched spikes times filename",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In_regions{:s}.pickle")
+                        default="../../results/spikes_times_epochedFirst2In.pickle")
     args = parser.parse_args()
 
-    selected_regions = args.selected_regions[1:-1].split(",")
     before_trial_pad = args.before_trial_pad
     after_trial_pad = args.after_trial_pad
     port_in_ephys_ts_col_name = args.port_in_ephys_ts_col_name
     port_out_ephys_ts_col_name = args.port_out_ephys_ts_col_name
     spikes_times_col_name = args.spikes_times_col_name
     region_col_name = args.region_col_name
+    cluster_id_col_name = args.cluster_id_col_name
     transitions_data_filename = args.transitions_data_filename
     units_info_filename = args.units_info_filename
     correct_sequences_start_and_end_indices_filename = \
         args.correct_sequences_start_and_end_indices_filename
-    epoched_spikes_times_filename_pattern = \
-        args.epoched_spikes_times_filename_pattern
+    epoched_spikes_times_filename = args.epoched_spikes_times_filename
 
     transitions_data = pd.read_csv(transitions_data_filename)
     units_info = pd.read_csv(units_info_filename)
-    units_info = units_info[units_info[region_col_name].isin(selected_regions)]
-    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
 
     correct_seqs_start_and_end_indices = \
         pd.read_csv(correct_sequences_start_and_end_indices_filename,
@@ -99,16 +93,15 @@ def main(argv):
                 np.logical_and(trial_start_time <= unit_spikes_times,
                                unit_spikes_times < trial_end_time)] - first_2in_time
     clusters_ids = units_info[cluster_id_col_name].tolist()
+    regions = units_info[region_col_name].tolist()
     results_to_save = {
         "epochs_times": epochs_times,
         "spikes_times": spikes_times_rel,
         "trials_start_times": trials_start_times_rel,
         "trials_end_times": trials_end_times_rel,
         "clusters_ids": clusters_ids,
+        "regions": regions,
     }
-    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
-    epoched_spikes_times_filename = \
-        epoched_spikes_times_filename_pattern.format(selected_regions_str)
     with open(epoched_spikes_times_filename, "wb") as f: pickle.dump(results_to_save, f)
 
     breakpoint()
