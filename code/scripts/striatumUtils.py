@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def findCorrectSequencesStartAndEndIndices(correct_sequence,
                                            transitions_data,
                                            start_port_colname="Start_Port"):
