@@ -23,6 +23,9 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("est_init_number", help="estimation init number",
                         type=int)
+    parser.add_argument("--selected_regions",
+                        help="only use neurons from these selected regions",
+                        type=str, default="[striatum]")
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
     parser.add_argument("--common_n_ind_points",
@@ -33,23 +36,23 @@ def main(argv):
                         type=float, default=5.0)
     parser.add_argument("--min_neuron_trials_avg_firing_rate",
                         help="min trials-averaged firing rate to keep a neuron",
-                        type=float, default=0.1)
-    parser.add_argument("--epoched_spikes_times_filename",
-                        help="epoched spikes times filename",
+                        type=float, default=0.0)
+    parser.add_argument("--epoched_spikes_times_filename_pattern",
+                        help="epoched spikes times filename pattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In.pickle")
+                        default="../../results/spikes_times_epochedFirst2In_regions{:s}.pickle")
     parser.add_argument("--est_init_config_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
                         default="../../init/{:08d}_estimation_metaData.ini")
-    parser.add_argument("--model_save_filename_pattern",
-                        help="model save filename pattern",
-                        type=str,
-                        default="../../results/{:08d}_estimatedModel.pickle")
     parser.add_argument("--estim_res_metadata_filename_pattern",
                         help="estimation result metadata filename pattern",
                         type=str,
                         default="../../results/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--model_save_filename_pattern",
+                        help="model save filename pattern",
+                        type=str,
+                        default="../../results/{:08d}_estimatedModel.pickle")
     parsed, unknown = parser.parse_known_args()
     for arg in unknown:
         if arg.startswith(("-", "--")):
@@ -58,15 +61,21 @@ def main(argv):
     args = parser.parse_args()
 
     est_init_number = args.est_init_number
+    selected_regions = args.selected_regions[1:-1].split(",")
     n_latents = args.n_latents
     common_n_ind_points = args.common_n_ind_points
-    max_trial_duration = args.max_trial_duration 
+    max_trial_duration = args.max_trial_duration
     min_neuron_trials_avg_firing_rate = args.min_neuron_trials_avg_firing_rate
-    epoched_spikes_times_filename = args.epoched_spikes_times_filename
+    epoched_spikes_times_filename_pattern = \
+        args.epoched_spikes_times_filename_pattern
     est_init_config_filename_pattern = args.est_init_config_filename_pattern
-    model_save_filename_pattern = args.model_save_filename_pattern
     estim_res_metadata_filename_pattern = \
         args.estim_res_metadata_filename_pattern
+    model_save_filename_pattern = args.model_save_filename_pattern
+
+    selected_regions_str = "".join(selected_region + "_" for selected_region in selected_regions)
+    epoched_spikes_times_filename = \
+        epoched_spikes_times_filename_pattern.format(selected_regions_str)
 
     # get spike_times
     with open(epoched_spikes_times_filename, "rb") as f:
@@ -164,11 +173,14 @@ def main(argv):
     # save estimated values
     estim_res_config = configparser.ConfigParser()
     estim_res_config["data_params"] = {
+        "selected_regions ": selected_regions,
         "trials_indices": trials_indices,
         "neurons_indices": neurons_indices,
         "nLatents": n_latents,
         "max_trial_duration": max_trial_duration,
-        "min_neuron_trials_avg_firing_rate": min_neuron_trials_avg_firing_rate}
+        "min_neuron_trials_avg_firing_rate": min_neuron_trials_avg_firing_rate,
+        "epoched_spikes_times_filename": epoched_spikes_times_filename,
+    }
     estim_res_config["optim_params"] = params["optim_params"]
     estim_res_config["estimation_params"] = {"est_init_number":
                                              est_init_number}
