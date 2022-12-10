@@ -23,7 +23,7 @@ def main(argv):
     parser.add_argument("--ksTestGamma", help="gamma value for KS test", type=int, default=10)
     parser.add_argument("--n_time_steps_CIF",
                         help="number of time steps to plot for CIF",
-                        type=int, default=100)
+                        type=int, default=1000)
     parser.add_argument("--trials_timing_info_filename",
                         help="trials' timing info filename",
                         type=str,
@@ -94,65 +94,65 @@ def main(argv):
                             for r in range(n_trials)])
 
     # plot lower bound history
-#     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(lowerBoundHist=lowerBoundHist)
-#     fig.write_image(lowerBoundHistVsIterNoFigFilenamePattern.format("png"))
-#     fig.write_html(lowerBoundHistVsIterNoFigFilenamePattern.format("html"))
-# 
-#     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(elapsedTimeHist=elapsedTimeHist, lowerBoundHist=lowerBoundHist)
-#     fig.write_image(lowerBoundHistVsElapsedTimeFigFilenamePattern.format("png"))
-#     fig.write_html(lowerBoundHistVsElapsedTimeFigFilenamePattern.format("html"))
+    fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(lowerBoundHist=lowerBoundHist)
+    fig.write_image(lowerBoundHistVsIterNoFigFilenamePattern.format("png"))
+    fig.write_html(lowerBoundHistVsIterNoFigFilenamePattern.format("html"))
+
+    fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(elapsedTimeHist=elapsedTimeHist, lowerBoundHist=lowerBoundHist)
+    fig.write_image(lowerBoundHistVsElapsedTimeFigFilenamePattern.format("png"))
+    fig.write_html(lowerBoundHistVsElapsedTimeFigFilenamePattern.format("html"))
 
     # plot estimated latent across trials
-#     testMuK, testVarK = model.predictLatents(times=trials_times)
-#     fig = svGPFA.plot.plotUtilsPlotly.getPlotLatentAcrossTrials(
-#         times=trials_times.numpy(),
-#         latentsMeans=testMuK, latentsSTDs=torch.sqrt(testVarK),
-#         latentToPlot=latent_to_plot,
-#         trials_labels=trials_labels,
-#         xlabel="Time (msec)")
-#     fig.write_image(latentsFigFilenamePattern.format("png"))
-#     fig.write_html(latentsFigFilenamePattern.format("html"))
+    testMuK, testVarK = model.predictLatents(times=trials_times)
+    fig = svGPFA.plot.plotUtilsPlotly.getPlotLatentAcrossTrials(
+        times=trials_times.numpy(),
+        latentsMeans=testMuK, latentsSTDs=torch.sqrt(testVarK),
+        latentToPlot=latent_to_plot,
+        trials_labels=trials_labels,
+        xlabel="Time (msec)")
+    fig.write_image(latentsFigFilenamePattern.format("png"))
+    fig.write_html(latentsFigFilenamePattern.format("html"))
 
     # plot orthonormalized estimated latent across trials
-#     testMuK, _ = model.predictLatents(times=trials_times)
-#     test_mu_k_np = [testMuK[r].detach().numpy() for r in range(len(testMuK))]
-#     estimatedC, estimatedD = model.getSVEmbeddingParams()
-#     estimatedC_np = estimatedC.detach().numpy()
-#     fig = svGPFA.plot.plotUtilsPlotly.getPlotOrthonormalizedLatentAcrossTrials(
-#         trials_times=trials_times, latentsMeans=test_mu_k_np, latentToPlot=latent_to_plot,
-#         align_event=align_event,
-#         marked_events_times=marked_events_times,
-#         marked_events_colors=marked_events_colors,
-#         marked_events_markers=marked_events_markers,
-#         C=estimatedC_np, trials_indices=trials_indices,
-#         xlabel="Time (msec)")
-#     fig.write_image(orthonormalizedLatentsFigFilenamePattern.format("png"))
-#     fig.write_html(orthonormalizedLatentsFigFilenamePattern.format("html"))
+    testMuK, _ = model.predictLatents(times=trials_times)
+    test_mu_k_np = [testMuK[r].detach().numpy() for r in range(len(testMuK))]
+    estimatedC, estimatedD = model.getSVEmbeddingParams()
+    estimatedC_np = estimatedC.detach().numpy()
+    fig = svGPFA.plot.plotUtilsPlotly.getPlotOrthonormalizedLatentAcrossTrials(
+        trials_times=trials_times, latentsMeans=test_mu_k_np, latentToPlot=latent_to_plot,
+        align_event=align_event,
+        marked_events_times=marked_events_times,
+        marked_events_colors=marked_events_colors,
+        marked_events_markers=marked_events_markers,
+        C=estimatedC_np, trials_indices=trials_indices,
+        xlabel="Time (msec)")
+    fig.write_image(orthonormalizedLatentsFigFilenamePattern.format("png"))
+    fig.write_html(orthonormalizedLatentsFigFilenamePattern.format("html"))
 
-#     fig = svGPFA.plot.plotUtilsPlotly.get3DPlotOrthonormalizedLatentsAcrossTrials(
-#         trials_times=trials_times.numpy(), latentsMeans=test_mu_k_np,
-#         C=estimatedC_np, trials_indices=trials_indices,
-#         latentsToPlot=latents_to_3D_plot,
-#         align_event=align_event,
-#         marked_events_times=marked_events_times,
-#         marked_events_colors=marked_events_colors,
-#         marked_events_markers=marked_events_markers,
-#     )
-#     fig.write_image(orthonormalizedLatents3DFigFilenamePattern.format("png"))
-#     fig.write_html(orthonormalizedLatents3DFigFilenamePattern.format("html"))
+    fig = svGPFA.plot.plotUtilsPlotly.get3DPlotOrthonormalizedLatentsAcrossTrials(
+        trials_times=trials_times.numpy(), latentsMeans=test_mu_k_np,
+        C=estimatedC_np, trials_indices=trials_indices,
+        latentsToPlot=latents_to_3D_plot,
+        align_event=align_event,
+        marked_events_times=marked_events_times,
+        marked_events_colors=marked_events_colors,
+        marked_events_markers=marked_events_markers,
+    )
+    fig.write_image(orthonormalizedLatents3DFigFilenamePattern.format("png"))
+    fig.write_html(orthonormalizedLatents3DFigFilenamePattern.format("html"))
 
     # plot embedding
-#     embeddingMeans, embeddingVars = model.predictEmbedding(times=trials_times)
-#     embeddingMeans = embeddingMeans.detach().numpy()
-#     embeddingVars = embeddingVars.detach().numpy()
-#     title = "Neuron {:d}".format(neuron_to_plot)
-#     fig = svGPFA.plot.plotUtilsPlotly.getPlotEmbeddingAcrossTrials(
-#         times=trials_times.numpy(),
-#         embeddingsMeans=embeddingMeans[:, :, neuron_to_plot],
-#         embeddingsSTDs=np.sqrt(embeddingVars[:, :, neuron_to_plot]),
-#         title=title)
-#     fig.write_image(embeddingsFigFilenamePattern.format("png"))
-#     fig.write_html(embeddingsFigFilenamePattern.format("html"))
+    embeddingMeans, embeddingVars = model.predictEmbedding(times=trials_times)
+    embeddingMeans = embeddingMeans.detach().numpy()
+    embeddingVars = embeddingVars.detach().numpy()
+    title = "Neuron {:d}".format(neuron_to_plot)
+    fig = svGPFA.plot.plotUtilsPlotly.getPlotEmbeddingAcrossTrials(
+        times=trials_times.numpy(),
+        embeddingsMeans=embeddingMeans[:, :, neuron_to_plot],
+        embeddingsSTDs=np.sqrt(embeddingVars[:, :, neuron_to_plot]),
+        title=title)
+    fig.write_image(embeddingsFigFilenamePattern.format("png"))
+    fig.write_html(embeddingsFigFilenamePattern.format("html"))
 
     # calculate expected IF values (for KS test and IF plots)
     with torch.no_grad():
@@ -180,8 +180,6 @@ def main(argv):
     spikes_times_GOF = spikes_times[trial_to_plot][neuron_to_plot]
     title = "Trial {:d}, Neuron {:d} ({:d} spikes)".format(
         trial_to_plot, neuron_to_plot, len(spikes_times_GOF))
-
-    breakpoint()
 
     # plot KS test time rescaling (numerical correction)
     if len(spikes_times_GOF) > 0:
