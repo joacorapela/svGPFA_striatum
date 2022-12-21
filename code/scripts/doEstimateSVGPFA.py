@@ -6,6 +6,7 @@ import torch
 import pickle
 import argparse
 import configparser
+import cProfile
 import pandas as pd
 import numpy as np
 
@@ -17,6 +18,7 @@ import svGPFA.utils.configUtils
 import svGPFA.utils.miscUtils
 import svGPFA.utils.initUtils
 
+# import svGPFA.utils.my_globals
 
 def main(argv):
 
@@ -25,9 +27,14 @@ def main(argv):
                         type=int)
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
+    parser.add_argument("--n_threads", help="number of threads for PyTorch",
+                        type=int, default=6)
     parser.add_argument("--common_n_ind_points",
                         help="common number of inducing points",
                         type=int, default=9)
+    parser.add_argument("--profile",
+                        help="use this function if you want to profile svGPFA.maximize()",
+                        action="store_true")
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filenamepattern",
                         type=str,
@@ -40,6 +47,10 @@ def main(argv):
                         help="estimation result metadata filename pattern",
                         type=str,
                         default="../../results/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--profiling_info_filename_pattern",
+                        help="profiling information filename pattern",
+                        type=str,
+                        default="../../results/{:08d}_profiling_info.txt")
     parser.add_argument("--model_save_filename_pattern",
                         help="model save filename pattern",
                         type=str,
@@ -53,11 +64,14 @@ def main(argv):
 
     est_init_number = args.est_init_number
     n_latents = args.n_latents
+    n_threads = args.n_threads
     common_n_ind_points = args.common_n_ind_points
+    profile = args.profile
     epoched_spikes_times_filename = args.epoched_spikes_times_filename
     est_init_config_filename_pattern = args.est_init_config_filename_pattern
     estim_res_metadata_filename_pattern = \
         args.estim_res_metadata_filename_pattern
+    profiling_info_filename_pattern = args.profiling_info_filename_pattern
     model_save_filename_pattern = args.model_save_filename_pattern
 
     est_init_config_filename = est_init_config_filename_pattern.format(
@@ -65,6 +79,11 @@ def main(argv):
     est_init_config = configparser.ConfigParser()
     est_init_config.read(est_init_config_filename)
 
+    # fixing a bug in PyTorch
+    # https://github.com/pytorch/pytorch/issues/90760
+    torch.set_num_threads(torch.get_num_threads())
+
+    # torch.set_num_threads(n_threads)
     selected_regions = est_init_config["data_params"]["selected_regions"][1:-1].split(",")
     max_trial_duration = float(est_init_config["data_params"]["max_trial_duration"])
     min_neuron_trials_avg_firing_rate = float(est_init_config["data_params"]["min_neuron_trials_avg_firing_rate"])
@@ -73,6 +92,7 @@ def main(argv):
     with open(epoched_spikes_times_filename, "rb") as f:
         load_res = pickle.load(f)
     spikes_times = load_res["spikes_times"]
+     
     regions = load_res["regions"]
     trials_start_times = np.array(load_res["trials_start_times"])
     trials_end_times = np.array(load_res["trials_end_times"])
@@ -85,7 +105,6 @@ def main(argv):
         units_to_remove=units_to_remove)
     neurons_indices = [n for n in range(n_neurons)
                        if n not in units_to_remove]
-    breakpoint()
 
     n_trials = len(spikes_times)
     trials_indices = np.arange(n_trials)
@@ -148,6 +167,9 @@ def main(argv):
         if not os.path.exists(estim_res_metadata_filename):
             estPrefixUsed = False
     modelSaveFilename = model_save_filename_pattern.format(estResNumber)
+    if profile:
+        profiling_info_filename_pattern = \
+            profiling_info_filename_pattern.format(estResNumber)
 
     # build kernels
     kernels = svGPFA.utils.miscUtils.buildKernels(
@@ -172,6 +194,7 @@ def main(argv):
     # save estimated values
     estim_res_config = configparser.ConfigParser()
     estim_res_config["data_params"] = {
+        "n_threads": n_threads,
         "selected_regions ": selected_regions,
         "trials_indices": trials_indices,
         "neurons_indices": neurons_indices,
@@ -187,17 +210,36 @@ def main(argv):
         estim_res_config.write(f)
 
     # maximize lower bound
-    def getKernelParams(model):
-        kernelParams = model.getKernelsParams()
-        print("kernelParams", kernelParams)
-        return kernelParams[0]
+    def getSVPosteriorOnIndPointsParams(model, get_mean=True, latent=0, trial=0):
+        params = model.getSVPosteriorOnIndPointsParams()
+        base_index = 0
+        if not get_mean:
+            base_index = len(params)/2 - 1
+        answer = params[base_index][trial, :, 0]
+        return answer
+
+    def getKernelsParams(model):
+        params = model.getKernelsParams()
+        return params
 
     # maximize lower bound
     svEM = svGPFA.stats.svEM.SVEM_PyTorch()
+    if profile:
+        pr = cProfile.Profile()
+        pr.enable()
+
+#     svGPFA.utils.my_globals.raise_exception = True
+
     lowerBoundHist, elapsedTimeHist, terminationInfo, iterationsModelParams = \
         svEM.maximize(model=model, optim_params=params["optim_params"],
                       method=params["optim_params"]["optim_method"],
-                      getIterationModelParamsFn=getKernelParams)
+                      # getIterationModelParamsFn=getSVPosteriorOnIndPointsParams,
+                      getIterationModelParamsFn=getKernelsParams,
+                      printIterationModelParams=True)
+
+    if profile:
+        pr.disable()
+        pr.dump_stats(filename=profiling_info_filename)
 
     resultsToSave = {"neurons_indices": neurons_indices,
                      "lowerBoundHist": lowerBoundHist,
@@ -208,12 +250,14 @@ def main(argv):
                      "trials_indices": trials_indices,
                      "trials_start_times": trials_start_times,
                      "trials_end_times": trials_end_times,
-                     "model": model}
+                     "model": model,
+                    }
     with open(modelSaveFilename, "wb") as f:
         pickle.dump(resultsToSave, f)
-    print("Saved results to {:s}".format(modelSaveFilename))
+        print("Saved results to {:s}".format(modelSaveFilename))
 
-    breakpoint()
+    print(f"Elapsed time {elapsedTimeHist[-1]}")
+    # breakpoint()
 
 
 if __name__ == "__main__":
