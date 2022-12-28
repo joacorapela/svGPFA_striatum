@@ -16,7 +16,7 @@ def main(argv):
                         type=int)
     parser.add_argument("--n_neurons_to_plot",
                         help="number of neurons to plot",
-                        type=int, default=17)
+                        type=int, default=18)
     parser.add_argument("--n_time_steps_CIF", help="number of stime steps in "
                         "CIF plots", type=int, default=100)
     parser.add_argument("--model_save_filename_pattern",
@@ -49,6 +49,8 @@ def main(argv):
     spikes_times = estResults["spikes_times"]
     model = estResults["model"]
     trials_indices = estResults["trials_indices"]
+    clusters_ids = estResults["clusters_ids"]
+    regions = estResults["regions"]
     n_trials = len(trials_indices)
     trials_start_times = estResults["trials_start_times"]
     trials_end_times = estResults["trials_end_times"]
@@ -76,7 +78,8 @@ def main(argv):
         cif_values = model.computeExpectedPosteriorCIFs(times=trials_times)
 
     for neuron_to_plot in range(n_neurons_to_plot):
-        print(f"Processing neuron {neuron_to_plot}")
+        print(f"Processing cluster_id {clusters_ids[neuron_to_plot]}")
+        title = f"Cluster ID: {clusters_ids[neuron_to_plot]}, Region: {regions[neuron_to_plot]}"
         fig = svGPFA.plot.plotUtilsPlotly.getPlotCIFsOneNeuronAllTrials(
             trials_times=trials_times,
             cif_values=cif_values,
@@ -87,6 +90,7 @@ def main(argv):
             marked_events_times=marked_events_times,
             marked_events_colors=marked_events_colors,
             marked_events_markers=marked_events_markers,
+            title=title,
         )
         fig.write_image(
             CIFs_oneNeuron_all_trials_fig_filename_pattern.format(
