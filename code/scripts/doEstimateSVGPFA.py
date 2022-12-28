@@ -20,6 +20,12 @@ import svGPFA.utils.initUtils
 
 # import svGPFA.utils.my_globals
 
+def delete_multiple_element(list_object, indices):
+    indices = sorted(indices, reverse=True)
+    for idx in indices:
+        if idx < len(list_object):
+            list_object.pop(idx)
+
 def main(argv):
 
     parser = argparse.ArgumentParser()
@@ -92,24 +98,23 @@ def main(argv):
     with open(epoched_spikes_times_filename, "rb") as f:
         load_res = pickle.load(f)
     spikes_times = load_res["spikes_times"]
-     
+    clusters_ids = load_res["clusters_ids"]
     regions = load_res["regions"]
     trials_start_times = np.array(load_res["trials_start_times"])
     trials_end_times = np.array(load_res["trials_end_times"])
 
     n_neurons = len(regions)
+    neurons_indices = np.arange(n_neurons)
     units_to_remove = [n for n in range(n_neurons)
                        if regions[n] not in selected_regions]
+    neurons_indices = np.delete(neurons_indices, units_to_remove)
     spikes_times = gcnu_common.utils.neuralDataAnalysis.removeUnits(
         spikes_times = spikes_times,
         units_to_remove=units_to_remove)
-    neurons_indices = [n for n in range(n_neurons)
-                       if n not in units_to_remove]
 
     n_trials = len(spikes_times)
     trials_indices = np.arange(n_trials)
     n_neurons = len(spikes_times[0])
-    neurons_indices = np.arange(n_neurons)
 
     trials_durations = trials_end_times - trials_start_times
     spikes_times, neurons_indices = \
@@ -117,6 +122,10 @@ def main(argv):
             spikes_times=spikes_times, neurons_indices=neurons_indices,
             trials_durations = trials_durations,
             min_neuron_trials_avg_firing_rate=min_neuron_trials_avg_firing_rate)
+    clusters_ids = [clusters_ids[i] for i in neurons_indices]
+    regions = [regions[i] for i in neurons_indices]
+
+    breakpoint()
 
     spikes_times, trials_indices = \
         gcnu_common.utils.neuralDataAnalysis.removeTrialsLongerThanThr(
@@ -153,8 +162,9 @@ def main(argv):
             trials_start_times=trials_start_times,
             trials_end_times=trials_end_times,
             dynamic_params_spec=dynamic_params_spec,
-            config_file_params_spec=config_file_params_spec,
-            default_params_spec=default_params_spec)
+            config_file_params_spec=config_file_params_spec)
+            # config_file_params_spec=config_file_params_spec,
+            # default_params_spec=default_params_spec)
 
     kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
 
@@ -198,7 +208,10 @@ def main(argv):
         "selected_regions ": selected_regions,
         "trials_indices": trials_indices,
         "neurons_indices": neurons_indices,
+        "clusters_ids": clusters_ids,
+        "regions": regions,
         "nLatents": n_latents,
+        "common_n_ind_points": common_n_ind_points,
         "max_trial_duration": max_trial_duration,
         "min_neuron_trials_avg_firing_rate": min_neuron_trials_avg_firing_rate,
         "epoched_spikes_times_filename": epoched_spikes_times_filename,
@@ -208,6 +221,7 @@ def main(argv):
                                              est_init_number}
     with open(estim_res_metadata_filename, "w") as f:
         estim_res_config.write(f)
+    print(f"Saved {estim_res_metadata_filename}")
 
     # maximize lower bound
     def getSVPosteriorOnIndPointsParams(model, get_mean=True, latent=0, trial=0):
@@ -242,6 +256,8 @@ def main(argv):
         pr.dump_stats(filename=profiling_info_filename)
 
     resultsToSave = {"neurons_indices": neurons_indices,
+                     "clusters_ids": clusters_ids,
+                     "regions": regions,
                      "lowerBoundHist": lowerBoundHist,
                      "elapsedTimeHist": elapsedTimeHist,
                      "terminationInfo": terminationInfo,
