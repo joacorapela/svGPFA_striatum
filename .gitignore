@@ -6,6 +6,7 @@ init/*
 results/*
 code/scripts/mat_results/*
 code/scripts/old/*
+notes/*
 slurm/figures/*
 slurm/outputs/*
 docs/firstReport/*
