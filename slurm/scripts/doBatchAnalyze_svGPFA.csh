@@ -1,7 +1,7 @@
 #!/bin/csh
 
-setenv estInitNumber 1
-setenv priorCovRegParam 1e-3
+setenv estInitNumber 15
+setenv common_n_ind_points 25
 # set arrayOpt=2-15
 # set arrayOpt=2-3
 # set arrayOpt=4-15
@@ -15,8 +15,9 @@ sbatch \
 --error=../outputs/doBathAnalyze_svGPFA_%A_%a.err \
 --time=96:00:00 \
 --nodes=1 \
+--exclusive \
 --ntasks=1 \
---cpus-per-task=12 \
---mem=20G \
+--cpus-per-task=6 \
+--mem=40G \
 --array=$arrayOpt \
 ./doAnalyze_svGPFA.sbatch 
