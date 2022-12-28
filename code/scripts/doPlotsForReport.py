@@ -61,6 +61,7 @@ def main(argv):
         estResults = pickle.load(f)
     spikes_times = estResults["spikes_times"]
     trials_indices = estResults["trials_indices"]
+    clusters_ids = estResults["clusters_ids"]
     trials_start_times = estResults["trials_start_times"]
     trials_end_times = estResults["trials_end_times"]
     lowerBoundHist = estResults["lowerBoundHist"]
@@ -201,13 +202,20 @@ def main(argv):
     fig.write_html(rocFigFilenamePattern.format("html"))
 
     # plot orthonormalized embedding parameters
+    hovertemplate = "value: %{y}<br>" + \
+                    "neuron index: %{x}<br>" + \
+                    "%{text}"
+    text = [f"cluster_id: {cluster_id}" for cluster_id in clusters_ids]
     estimatedC, estimatedD = model.getSVEmbeddingParams()
     fig = svGPFA.plot.plotUtilsPlotly.getPlotOrthonormalizedEmbeddingParams(
-        C=estimatedC.numpy(), d=estimatedD.numpy())
+        C=estimatedC.numpy(), d=estimatedD.numpy(),
+        hovertemplate=hovertemplate, text=text)
     fig.write_image(
         orthonormalizedEmbeddingParamsFigFilenamePattern.format("png"))
     fig.write_html(
         orthonormalizedEmbeddingParamsFigFilenamePattern.format("html"))
+
+    breakpoint()
 
     # plot kernel parameters
     kernelsParams = model.getKernelsParams()
