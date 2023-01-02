@@ -1,6 +1,16 @@
-import numpy as np
 import pandas as pd
+import numpy as np
 
+
+def getNeuronSpikesTimesAndRegion(cluster_id, spikes_times, clusters_ids,
+                                  regions):
+    n_trials = len(spikes_times)
+    cluster_index = clusters_ids.index(cluster_id)
+    region = regions[cluster_index]
+    neuron_spikes_times = [None for r in range(n_trials)]
+    for r in range(n_trials):
+        neuron_spikes_times[r] = spikes_times[r][cluster_index]
+    return neuron_spikes_times, region
 
 def findCorrectSequencesStartAndEndIndices(correct_sequence,
                                            transitions_data,
