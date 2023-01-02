@@ -30,6 +30,12 @@ def main(argv):
     parser.add_argument("--step_size",
                         help="step size (sec) for spectogram",
                         type=float, default=.05)
+    parser.add_argument("--min_freq_spectrogram",
+                        help="minum frequency to plot in spectrograms (Hz)",
+                        type=float, default=0.0)
+    parser.add_argument("--max_freq_spectrogram",
+                        help="maximum frequency to plot in spectrograms (Hz)",
+                        type=float, default=50.0)
     parser.add_argument("--title_pattern", help="title pattern", type=str,
                         default="Cluster id: {:d}, Region: {:s}")
     parser.add_argument("--epoched_spikes_times_filename",
@@ -62,6 +68,8 @@ def main(argv):
     bins_dt = args.bins_dt 
     window_length = args.window_length 
     step_size = args.step_size 
+    min_freq_spectrogram = args.min_freq_spectrogram
+    max_freq_spectrogram = args.max_freq_spectrogram
     title_pattern = args.title_pattern
     epoched_spikes_times_filename = args.epoched_spikes_times_filename
     ISIsHistFigFilenamePattern = args.ISIsHistFigFilenamePattern
@@ -145,7 +153,8 @@ def main(argv):
     bins_centers = bins_edges[:-1] + np.diff(bins_edges)
     spectogram, T, f = gcnu_common.utils.spectral_analysis.compute_spectogram(
         t=bins_centers, x_trials=neuron_binned_spikes,
-        window_length=window_length, step_size=step_size, Fs=Fs)
+        window_length=window_length, step_size=step_size, Fs=Fs,
+        fpass=(min_freq_spectrogram, max_freq_spectrogram))
 
     # Let's plot now
 
