@@ -39,19 +39,19 @@ def main(argv):
     parser.add_argument("--ISIsHistFigFilenamePattern",
                         help="inter-spike intervals histogram filename pattern",
                         type=str,
-                        default="../../figures/ISIhistogram_clusterID{:d}_region{:s}.{:s}")
+                        default="../../figures/clusterID{:d}_ISIsHistogram_region{:s}.{:s}")
     parser.add_argument("--meanACFFigFilenamePattern",
                         help="mean autocorrelation functionfilename pattern",
                         type=str,
-                        default="../../figures/meanACF_clusterID{:d}_region{:s}.{:s}")
+                        default="../../figures/clusterID{:d}_meanACF_region{:s}.{:s}")
     parser.add_argument("--meanSpectrumFigFilenamePattern",
                         help="mean spectrum filename pattern",
                         type=str,
-                        default="../../figures/meanSpectrum_clusterID{:d}_region{:s}.{:s}")
+                        default="../../figures/clusterID{:d}_meanSpectrum_region{:s}.{:s}")
     parser.add_argument("--spectrogramFigFilenamePattern",
                         help="spectrogramfilename pattern",
                         type=str,
-                        default="../../figures/spectrogram_clusterID{:d}_region{:s}.{:s}")
+                        default="../../figures/clusterID{:d}_spectrogram_region{:s}.{:s}")
     args = parser.parse_args()
 
     cluster_id = args.cluster_id
@@ -106,7 +106,7 @@ def main(argv):
     spikes_times = [[spikes_times[r][n]*1000 for n in range(n_neurons)] for r in range(n_trials)]
 
     # get neuron spikes times
-    neuron_spikes_times, region = getNeuronSpikesTimesAndRegion(
+    neuron_spikes_times, region = striatumUtils.getNeuronSpikesTimesAndRegion(
         cluster_id=cluster_id, spikes_times=spikes_times,
         clusters_ids=clusters_ids, regions=regions)
 
@@ -199,9 +199,9 @@ def main(argv):
     fig.update_xaxes(title_text="Time (msec)")
     fig.update_layout(title=f"Cluster id: {cluster_id}, Region: {region}")
     fig.write_image(spectrogramFigFilenamePattern.format(cluster_id, region, "png"))
-    fig.write_html(spectrogramSpectrumFigFilenamePattern.format(cluster_id, region, "html"))
+    fig.write_html(spectrogramFigFilenamePattern.format(cluster_id, region, "html"))
 
-    breakpoint()
+    # breakpoint()
 
 
 if __name__ == "__main__":
