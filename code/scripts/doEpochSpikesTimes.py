@@ -8,6 +8,9 @@ import pandas as pd
 def main(argv):
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--fixed_duration_trials",
+                        action="store_true",
+                        help="build fixed duration trials")
     parser.add_argument("--before_trial_pad",
                         help="pad (in seconds) to be added at begining of "
                         "trial before the beginning of the sequence",
@@ -16,6 +19,9 @@ def main(argv):
                         help="pad (in seconds) to be added at end of "
                         "trial after the end of the sequence",
                         type=float, default=0.2)
+    parser.add_argument("--trial_duration",
+                        help="trial duration (in seconds)",
+                        type=float, default=5.0)
     parser.add_argument("--port_in_ephys_ts_col_name",
                         help="column name for port_in_ephys time stamp",
                         type=str, default="P1_IN_Ephys_TS")
@@ -41,14 +47,16 @@ def main(argv):
                         help="correct sequences filename",
                         type=str,
                         default="../../results/correctSequencesStartAndEndIndices.csv")
-    parser.add_argument("--epoched_spikes_times_filename",
-                        help="epoched spikes times filename",
+    parser.add_argument("--epoched_spikes_times_filename_pattern",
+                        help="epoched spikes times filename pattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In.pickle")
+                        default="../../results/spikes_times_epochedFirst2In_fixedDuration{:s}.pickle")
     args = parser.parse_args()
 
+    fixed_duration_trials = args.fixed_duration_trials
     before_trial_pad = args.before_trial_pad
     after_trial_pad = args.after_trial_pad
+    trial_duration = args.trial_duration
     port_in_ephys_ts_col_name = args.port_in_ephys_ts_col_name
     port_out_ephys_ts_col_name = args.port_out_ephys_ts_col_name
     spikes_times_col_name = args.spikes_times_col_name
@@ -58,7 +66,7 @@ def main(argv):
     units_info_filename = args.units_info_filename
     correct_sequences_start_and_end_indices_filename = \
         args.correct_sequences_start_and_end_indices_filename
-    epoched_spikes_times_filename = args.epoched_spikes_times_filename
+    epoched_spikes_times_filename_pattern = args.epoched_spikes_times_filename_pattern
 
     transitions_data = pd.read_csv(transitions_data_filename)
     units_info = pd.read_csv(units_info_filename)
@@ -80,9 +88,12 @@ def main(argv):
         first_2in_time = transitions_data.loc[seq_start_index,
                                               port_in_ephys_ts_col_name]
         trial_start_time = first_2in_time - before_trial_pad
-        last_7out_time = transitions_data.loc[seq_end_index,
-                                              port_out_ephys_ts_col_name]
-        trial_end_time = last_7out_time + after_trial_pad
+        if fixed_duration_trials:
+            trial_end_time = first_2in_time + trial_duration + after_trial_pad
+        else:
+            last_7out_time = transitions_data.loc[seq_end_index,
+                                                  port_out_ephys_ts_col_name]
+            trial_end_time = last_7out_time + after_trial_pad
         epochs_times[r] = first_2in_time
         trials_start_times_rel[r] = -before_trial_pad
         trials_end_times_rel[r] = trial_end_time - first_2in_time
@@ -102,6 +113,12 @@ def main(argv):
         "clusters_ids": clusters_ids,
         "regions": regions,
     }
+    if fixed_duration_trials:
+        epoched_spikes_times_filename = \
+            epoched_spikes_times_filename_pattern.format("True")
+    else:
+        epoched_spikes_times_filename = \
+            epoched_spikes_times_filename_pattern.format("False")
     with open(epoched_spikes_times_filename, "wb") as f: pickle.dump(results_to_save, f)
 
     breakpoint()
