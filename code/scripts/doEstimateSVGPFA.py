@@ -20,6 +20,15 @@ import svGPFA.utils.initUtils
 
 # import svGPFA.utils.my_globals
 
+def subset_trials_ids_data(selected_trials_ids, trials_ids, spikes_times,
+                           trials_start_times, trials_end_times):
+    indices = np.nonzero(np.in1d(trials_ids, selected_trials_ids))[0]
+    spikes_times_subset = [spikes_times[i] for i in indices]
+    trials_start_times_subset = trials_start_times[indices]
+    trials_end_times_subset = trials_end_times[indices]
+
+    return spikes_times_subset, trials_start_times_subset, trials_end_times_subset
+
 def delete_multiple_element(list_object, indices):
     indices = sorted(indices, reverse=True)
     for idx in indices:
@@ -37,14 +46,14 @@ def main(argv):
                         type=int, default=6)
     parser.add_argument("--common_n_ind_points",
                         help="common number of inducing points",
-                        type=int, default=9)
+                        type=int, default=15)
     parser.add_argument("--profile",
                         help="use this function if you want to profile svGPFA.maximize()",
                         action="store_true")
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filenamepattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In.pickle")
+                        default="../../results/spikes_times_epochedFirst2In_fixedDurationFalse_simplified.pickle")
     parser.add_argument("--est_init_config_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
@@ -57,6 +66,9 @@ def main(argv):
                         help="profiling information filename pattern",
                         type=str,
                         default="../../results/{:08d}_profiling_info.txt")
+    parser.add_argument("--trials_ids_filename", help="trials ids filename",
+                        type=str,
+                        default="../../results/trialsIDsOfPerfectSecuences.csv")
     parser.add_argument("--model_save_filename_pattern",
                         help="model save filename pattern",
                         type=str,
@@ -78,6 +90,7 @@ def main(argv):
     estim_res_metadata_filename_pattern = \
         args.estim_res_metadata_filename_pattern
     profiling_info_filename_pattern = args.profiling_info_filename_pattern
+    trials_ids_filename = args.trials_ids_filename
     model_save_filename_pattern = args.model_save_filename_pattern
 
     est_init_config_filename = est_init_config_filename_pattern.format(
@@ -89,19 +102,32 @@ def main(argv):
     # https://github.com/pytorch/pytorch/issues/90760
     torch.set_num_threads(torch.get_num_threads())
 
-    # torch.set_num_threads(n_threads)
     selected_regions = est_init_config["data_params"]["selected_regions"][1:-1].split(",")
-    max_trial_duration = float(est_init_config["data_params"]["max_trial_duration"])
+    # max_trial_duration = float(est_init_config["data_params"]["max_trial_duration"])
     min_neuron_trials_avg_firing_rate = float(est_init_config["data_params"]["min_neuron_trials_avg_firing_rate"])
 
     # get spike_times
     with open(epoched_spikes_times_filename, "rb") as f:
         load_res = pickle.load(f)
+    trials_ids = load_res["trials_ids"]
     spikes_times = load_res["spikes_times"]
-    clusters_ids = load_res["clusters_ids"]
-    regions = load_res["regions"]
     trials_start_times = np.array(load_res["trials_start_times"])
     trials_end_times = np.array(load_res["trials_end_times"])
+    clusters_ids = load_res["clusters_ids"]
+    regions = load_res["regions"]
+
+    # breakpoint()
+
+    # get selected_trials_ids
+    selected_trials_ids = np.genfromtxt(trials_ids_filename, dtype=np.uint64)
+    spikes_times, trials_start_times, trials_end_times = \
+            subset_trials_ids_data(selected_trials_ids=selected_trials_ids,
+                                   trials_ids=trials_ids,
+                                   spikes_times=spikes_times,
+                                   trials_start_times=trials_start_times,
+                                   trials_end_times=trials_end_times)
+
+    # breakpoint()
 
     n_neurons = len(regions)
     neurons_indices = np.arange(n_neurons)
@@ -112,8 +138,10 @@ def main(argv):
         spikes_times = spikes_times,
         units_to_remove=units_to_remove)
 
+    # breakpoint()
+
     n_trials = len(spikes_times)
-    trials_indices = np.arange(n_trials)
+    # trials_indices = np.arange(n_trials)
     n_neurons = len(spikes_times[0])
 
     trials_durations = trials_end_times - trials_start_times
@@ -125,18 +153,21 @@ def main(argv):
     clusters_ids = [clusters_ids[i] for i in neurons_indices]
     regions = [regions[i] for i in neurons_indices]
 
-    breakpoint()
+    # breakpoint()
 
-    spikes_times, trials_indices = \
-        gcnu_common.utils.neuralDataAnalysis.removeTrialsLongerThanThr(
-            spikes_times=spikes_times, trials_indices=trials_indices,
-            trials_durations=trials_durations,
-            max_trial_duration=max_trial_duration)
+    # spikes_times, trials_indices = \
+    #     gcnu_common.utils.neuralDataAnalysis.removeTrialsLongerThanThr(
+    #         spikes_times=spikes_times, trials_indices=trials_indices,
+    #         trials_durations=trials_durations,
+    #         max_trial_duration=max_trial_duration)
 
     n_trials = len(spikes_times)
     n_neurons = len(spikes_times[0])
-    trials_start_times = trials_start_times[trials_indices]
-    trials_end_times = trials_end_times[trials_indices]
+    # trials_ids = trials_ids[trials_indices]
+    # trials_start_times = trials_start_times[trials_indices]
+    # trials_end_times = trials_end_times[trials_indices]
+
+    breakpoint()
 
     #    build dynamic parameter specifications
     args_info = svGPFA.utils.initUtils.getArgsInfo()
@@ -206,13 +237,13 @@ def main(argv):
     estim_res_config["data_params"] = {
         "n_threads": n_threads,
         "selected_regions ": selected_regions,
-        "trials_indices": trials_indices,
+        "trials_ids": selected_trials_ids,
         "neurons_indices": neurons_indices,
         "clusters_ids": clusters_ids,
         "regions": regions,
         "nLatents": n_latents,
         "common_n_ind_points": common_n_ind_points,
-        "max_trial_duration": max_trial_duration,
+        # "max_trial_duration": max_trial_duration,
         "min_neuron_trials_avg_firing_rate": min_neuron_trials_avg_firing_rate,
         "epoched_spikes_times_filename": epoched_spikes_times_filename,
     }
@@ -263,7 +294,8 @@ def main(argv):
                      "terminationInfo": terminationInfo,
                      "iterationModelParams": iterationsModelParams,
                      "spikes_times": spikes_times,
-                     "trials_indices": trials_indices,
+                     # "trials_indices": trials_indices,
+                     "trials_ids": selected_trials_ids,
                      "trials_start_times": trials_start_times,
                      "trials_end_times": trials_end_times,
                      "model": model,
