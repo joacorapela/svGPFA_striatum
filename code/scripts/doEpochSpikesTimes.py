@@ -27,7 +27,7 @@ def main(argv):
                         type=str, default="P1_IN_Ephys_TS")
     parser.add_argument("--port_out_ephys_ts_col_name",
                         help="column name for port_out_ephys time stamp",
-                        type=str, default="P1_OUT_Ephys_TS")
+                        type=str, default="P2_OUT_Ephys_TS")
     parser.add_argument("--spikes_times_col_name",
                         help="column name for spikes times",
                         type=str, default="Spike_times")
@@ -43,14 +43,10 @@ def main(argv):
     parser.add_argument("--units_info_filename",
                         help="filename with units information",
                         type=str, default="../../data/good_units_df.csv")
-    parser.add_argument("--correct_sequences_start_and_end_indices_filename",
-                        help="correct sequences filename",
-                        type=str,
-                        default="../../results/correctSequencesStartAndEndIndices.csv")
     parser.add_argument("--epoched_spikes_times_filename_pattern",
                         help="epoched spikes times filename pattern",
                         type=str,
-                        default="../../results/spikes_times_epochedFirst2In_fixedDuration{:s}.pickle")
+                        default="../../results/spikes_times_epochedFirst2In_fixedDuration{:s}_simplified.pickle")
     args = parser.parse_args()
 
     fixed_duration_trials = args.fixed_duration_trials
@@ -64,17 +60,15 @@ def main(argv):
     cluster_id_col_name = args.cluster_id_col_name
     transitions_data_filename = args.transitions_data_filename
     units_info_filename = args.units_info_filename
-    correct_sequences_start_and_end_indices_filename = \
-        args.correct_sequences_start_and_end_indices_filename
     epoched_spikes_times_filename_pattern = args.epoched_spikes_times_filename_pattern
 
     transitions_data = pd.read_csv(transitions_data_filename)
+
     units_info = pd.read_csv(units_info_filename)
 
-    correct_seqs_start_and_end_indices = \
-        pd.read_csv(correct_sequences_start_and_end_indices_filename,
-                    header=None)
-    n_trials = correct_seqs_start_and_end_indices.shape[0]
+    trials_ids = transitions_data["Trial_id"].unique()
+
+    n_trials = len(trials_ids)
     n_neurons = units_info.shape[0]
 
     epochs_times = [None for r in range(n_trials)]
@@ -82,17 +76,15 @@ def main(argv):
     trials_end_times_rel = [None for r in range(n_trials)]
     spikes_times_rel = [[None for n in range(n_neurons)] for r in range(n_trials)]
     for r in range(n_trials):
+        trial_id = trials_ids[r]
         print(f"Processing trial {r} ({n_trials-1})")
-        seq_start_index = correct_seqs_start_and_end_indices.iloc[r, 0]
-        seq_end_index = correct_seqs_start_and_end_indices.iloc[r, 1]
-        first_2in_time = transitions_data.loc[seq_start_index,
-                                              port_in_ephys_ts_col_name]
+        trial_transitions_data = transitions_data[transitions_data["Trial_id"]==trial_id]
+        first_2in_time = trial_transitions_data.iloc[0][port_in_ephys_ts_col_name]
         trial_start_time = first_2in_time - before_trial_pad
         if fixed_duration_trials:
             trial_end_time = first_2in_time + trial_duration + after_trial_pad
         else:
-            last_7out_time = transitions_data.loc[seq_end_index,
-                                                  port_out_ephys_ts_col_name]
+            last_7out_time = trial_transitions_data.iloc[-1][port_out_ephys_ts_col_name]
             trial_end_time = last_7out_time + after_trial_pad
         epochs_times[r] = first_2in_time
         trials_start_times_rel[r] = -before_trial_pad
@@ -106,6 +98,7 @@ def main(argv):
     clusters_ids = units_info[cluster_id_col_name].tolist()
     regions = units_info[region_col_name].tolist()
     results_to_save = {
+        "trials_ids": trials_ids,
         "epochs_times": epochs_times,
         "spikes_times": spikes_times_rel,
         "trials_start_times": trials_start_times_rel,
