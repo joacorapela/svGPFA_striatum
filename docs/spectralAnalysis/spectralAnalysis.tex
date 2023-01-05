@@ -1,0 +1,82 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+\usepackage[hypertexnames=false,colorlinks=true,breaklinks]{hyperref}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{natbib}
+\usepackage{apalike}
+\usepackage{amsmath,amssymb}
+
+\newcommand{\nNeurons}{17}
+\newcommand{\clustersIDs}{{0,1,4,6,7,15,26,34,35,37,44,49,50,52,58,66,72}}
+
+\title{Spectral analysis of Emmett' data}
+\author{Joaqu\'{i}n Rapela\thanks{j.rapela@ucl.ac.uk}}
+
+\begin{document}
+
+\maketitle
+
+\listoffigures
+
+\foreach \i in {1,...,\nNeurons}{
+    \pgfmathtruncatemacro{\clusterIDI}{\i-1}
+    \pgfmathsetmacro\clusterID{\clustersIDs[\clusterIDI]}
+
+    \begin{figure}
+        \begin{center}
+
+            \href{http://www.gatsby.ucl.ac.uk/~rapela/sthita/reports/spectralAnalysis/figures/clusterID\clusterID_ISIsHistogram_regionstriatum.html}{\includegraphics[width=5in]{../../figures/clusterID\clusterID_ISIsHistogram_regionstriatum.png}}
+
+            \caption{Inter-spike interval histogram. ClusterID \clusterID. Click on the image to
+            access its interactive version.}
+
+            \label{fig:ISIsHistogram\clusterID}
+
+        \end{center}
+    \end{figure}
+
+    \begin{figure}
+        \begin{center}
+
+            \href{http://www.gatsby.ucl.ac.uk/~rapela/sthita/reports/spectralAnalysis/figures/clusterID\clusterID_meanACF_regionstriatum.html}{\includegraphics[width=5in]{../../figures/clusterID\clusterID_meanACF_regionstriatum.png}}
+
+            \caption{Mean autocorrelation function. ClusterID \clusterID. Click on the image to
+            access its interactive version.}
+
+            \label{fig:meanACF\clusterID}
+
+        \end{center}
+    \end{figure}
+
+    \begin{figure}
+        \begin{center}
+
+            \href{http://www.gatsby.ucl.ac.uk/~rapela/sthita/reports/spectralAnalysis/figures/clusterID\clusterID_meanSpectrum_regionstriatum.html}{\includegraphics[width=5in]{../../figures/clusterID\clusterID_meanSpectrum_regionstriatum.png}}
+
+            \caption{Mean spectrum. ClusterID \clusterID. Click on the image to
+            access its interactive version.}
+
+            \label{fig:meanSpectrum\clusterID}
+
+        \end{center}
+    \end{figure}
+
+    \begin{figure}
+        \begin{center}
+
+            \href{http://www.gatsby.ucl.ac.uk/~rapela/sthita/reports/spectralAnalysis/figures/clusterID\clusterID_spectrogram_regionstriatum.html}{\includegraphics[width=5in]{../../figures/clusterID\clusterID_spectrogram_regionstriatum.png}}
+
+            \caption{Spectrogram. ClusterID \clusterID. Click on the image to
+            access its interactive version.}
+
+            \label{fig:spectrogram\clusterID}
+
+        \end{center}
+    \end{figure}
+
+    \clearpage
+}
+
+\end{document}
