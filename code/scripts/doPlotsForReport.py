@@ -24,10 +24,9 @@ def main(argv):
     parser.add_argument("--n_time_steps_CIF",
                         help="number of time steps to plot for CIF",
                         type=int, default=1000)
-    parser.add_argument("--trials_timing_info_filename",
-                        help="trials' timing info filename",
-                        type=str,
-                        default="../../results/trials_timing_info.csv")
+    parser.add_argument("--transitions_data_filename",
+                        help="transitions data filename",
+                        type=str, default="../../data/Transition_data_sync.csv")
     args = parser.parse_args()
 
     estResNumber = args.estResNumber
@@ -37,7 +36,7 @@ def main(argv):
     trial_to_plot = args.trial_to_plot
     ksTestGamma = args.ksTestGamma
     n_time_steps_CIF = args.n_time_steps_CIF
-    trials_timing_info_filename = args.trials_timing_info_filename
+    transitions_data_filename = args.transitions_data_filename
 
     modelSaveFilename = "../../results/{:08d}_estimatedModel.pickle".format(estResNumber)
     lowerBoundHistVsIterNoFigFilenamePattern = "../../figures/{:08d}_lowerBoundHistVSIterNo.{{:s}}".format(estResNumber)
@@ -55,12 +54,10 @@ def main(argv):
     rocFigFilenamePattern = "../../figures/{:08d}_predictive_analysis_trial{:03d}_neuron{:d}.{{:s}}".format(estResNumber, trial_to_plot, neuron_to_plot)
     kernelsParamsFigFilenamePattern = "../../figures/{:08d}_kernels_params.{{:s}}".format(estResNumber)
 
-    trials_timing_info = pd.read_csv(trials_timing_info_filename)
-
     with open(modelSaveFilename, "rb") as f:
         estResults = pickle.load(f)
     spikes_times = estResults["spikes_times"]
-    trials_indices = estResults["trials_indices"]
+    trials_ids = estResults["trials_ids"]
     clusters_ids = estResults["clusters_ids"]
     trials_start_times = estResults["trials_start_times"]
     trials_end_times = estResults["trials_end_times"]
@@ -69,7 +66,7 @@ def main(argv):
     model = estResults["model"]
     neurons_indices = estResults["neurons_indices"]
 
-    n_trials = len(trials_indices)
+    n_trials = len(spikes_times)
     neuron_to_plot_index = torch.nonzero(torch.tensor(neurons_indices) ==
                                          neuron_to_plot)
     neurons_indices_str = " ".join(str(i) for i in neurons_indices)
@@ -82,13 +79,14 @@ def main(argv):
         end_times=trials_end_times,
         n_steps=n_time_steps_CIF)
 
-    trials_labels = np.array([str(i) for i in trials_indices])
+    trials_labels = np.array([str(i) for i in trials_ids])
     n_trials = len(spikes_times)
 
+    transitions_data = pd.read_csv(transitions_data_filename)
     marked_events_times, marked_events_colors, marked_events_markers = \
-        striatumUtils.buildMarkedEventsInfo(
-            trials_timing_info=trials_timing_info,
-            trials_indices=trials_indices,
+        striatumUtils.buildMarkedEventsInfoFromTransitions(
+            transitions_data=transitions_data,
+            trials_ids=trials_ids,
         )
 
     align_event = np.array([marked_events_times[r][0] \
@@ -125,14 +123,14 @@ def main(argv):
         marked_events_times=marked_events_times,
         marked_events_colors=marked_events_colors,
         marked_events_markers=marked_events_markers,
-        C=estimatedC_np, trials_indices=trials_indices,
+        C=estimatedC_np, trials_ids=trials_ids,
         xlabel="Time (msec)")
     fig.write_image(orthonormalizedLatentsFigFilenamePattern.format("png"))
     fig.write_html(orthonormalizedLatentsFigFilenamePattern.format("html"))
 
     fig = svGPFA.plot.plotUtilsPlotly.get3DPlotOrthonormalizedLatentsAcrossTrials(
         trials_times=trials_times.numpy(), latentsMeans=test_mu_k_np,
-        C=estimatedC_np, trials_indices=trials_indices,
+        C=estimatedC_np, trials_ids=trials_ids,
         latentsToPlot=latents_to_3D_plot,
         align_event=align_event,
         marked_events_times=marked_events_times,
@@ -168,7 +166,7 @@ def main(argv):
         cif_values=cif_values,
         neuron_index=neuron_to_plot,
         spikes_times=spikes_times,
-        trials_indices=trials_indices,
+        trials_ids=trials_ids,
         align_event=align_event,
         marked_events_times=marked_events_times,
         marked_events_colors=marked_events_colors,
@@ -214,8 +212,6 @@ def main(argv):
         orthonormalizedEmbeddingParamsFigFilenamePattern.format("png"))
     fig.write_html(
         orthonormalizedEmbeddingParamsFigFilenamePattern.format("html"))
-
-    breakpoint()
 
     # plot kernel parameters
     kernelsParams = model.getKernelsParams()
