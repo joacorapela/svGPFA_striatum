@@ -12,4 +12,7 @@ slurm/outputs/*
 docs/firstReport/*
 !docs/firstReport/firstReport_96129535.tex
 !docs/firstReport/firstReport_96129535.pdf
+docs/spectralAnalysis/*
+!docs/spectralAnalysis/spectralAnalysis.tex
+!docs/spectralAnalysis/spectralAnalysis.pdf
 __pycache__
