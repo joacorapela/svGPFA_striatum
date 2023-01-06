@@ -6,7 +6,7 @@ To estimate and svGPFA model you could follow these steps:
 
 2. Create an `ini` file specifying initial values and options for the estimation of an svGPFA model. You could modify this example [00000017_estimation_metaData.ini](init/00000017_estimation_metaData.ini). For details on the entries on this file please refer to the [parameters sections](https://joacorapela.github.io/svGPFA/params.html) of the [svGPFA documentation](https://joacorapela.github.io/svGPFA/index.html).
 
-3. Create a text file containing the trial numbers you want to use to estimate an svGPFA model. This file should contain one trial number per line. For example the file [results/trialsIDsOfPerfectSecuences.csv](results/trialsIDsOfPerfectSecuences.csv) specifies the trials numbers of perfect sequences.
+3. Create a text file containing the trial numbers you want to use to estimate an svGPFA model. This file should contain one trial number per line. Trial numbers are given in the file `Transition_data_sync.csv`. For example the file [results/trialsIDsOfPerfectSecuences.csv](results/trialsIDsOfPerfectSecuences.csv) specifies the trials numbers of perfect sequences.
 
 4. Estimate an svGPFA model by changing to the `code/scripts` directory of the repo and running the following command:
 
