@@ -27,7 +27,7 @@ def main(argv):
                         type=str, default="P1_IN_Ephys_TS")
     parser.add_argument("--port_out_ephys_ts_col_name",
                         help="column name for port_out_ephys time stamp",
-                        type=str, default="P2_OUT_Ephys_TS")
+                        type=str, default="P1_OUT_Ephys_TS")
     parser.add_argument("--spikes_times_col_name",
                         help="column name for spikes times",
                         type=str, default="Spike_times")
@@ -67,6 +67,7 @@ def main(argv):
     units_info = pd.read_csv(units_info_filename)
 
     trials_ids = transitions_data["Trial_id"].unique()
+    trials_ids_max = trials_ids.max()
 
     n_trials = len(trials_ids)
     n_neurons = units_info.shape[0]
@@ -77,7 +78,7 @@ def main(argv):
     spikes_times_rel = [[None for n in range(n_neurons)] for r in range(n_trials)]
     for r in range(n_trials):
         trial_id = trials_ids[r]
-        print(f"Processing trial {r} ({n_trials-1})")
+        print(f"Processing trial {trials_ids[r]} ({trials_ids_max})")
         trial_transitions_data = transitions_data[transitions_data["Trial_id"]==trial_id]
         first_2in_time = trial_transitions_data.iloc[0][port_in_ephys_ts_col_name]
         trial_start_time = first_2in_time - before_trial_pad
