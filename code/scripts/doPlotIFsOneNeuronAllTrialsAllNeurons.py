@@ -23,10 +23,9 @@ def main(argv):
                         help="model save filename pattern",
                         type=str,
                         default="../../results/{:08d}_estimatedModel.pickle")
-    parser.add_argument("--trials_timing_info_filename",
-                        help="trials' timing info filename",
-                        type=str,
-                        default="../../results/trials_timing_info.csv")
+    parser.add_argument("--transitions_data_filename",
+                        help="transitions data filename",
+                        type=str, default="../../data/Transition_data_sync.csv")
     parser.add_argument("--CIFs_oneNeuron_all_trials_fig_filename_pattern",
                         help="figure filename for a CIF",
                         type=str,
@@ -36,22 +35,20 @@ def main(argv):
     est_res_number = args.est_res_number
     n_neurons_to_plot = args.n_neurons_to_plot
     n_time_steps_CIF = args.n_time_steps_CIF
+    transitions_data_filename = args.transitions_data_filename
     model_save_filename_pattern = args.model_save_filename_pattern
     CIFs_oneNeuron_all_trials_fig_filename_pattern = \
         args.CIFs_oneNeuron_all_trials_fig_filename_pattern
-    trials_timing_info_filename = args.trials_timing_info_filename
-
-    trials_timing_info = pd.read_csv(trials_timing_info_filename)
 
     model_save_filename = model_save_filename_pattern.format(est_res_number)
     with open(model_save_filename, "rb") as f:
         estResults = pickle.load(f)
     spikes_times = estResults["spikes_times"]
     model = estResults["model"]
-    trials_indices = estResults["trials_indices"]
+    trials_ids = estResults["trials_ids"]
     clusters_ids = estResults["clusters_ids"]
     regions = estResults["regions"]
-    n_trials = len(trials_indices)
+    n_trials = len(trials_ids)
     trials_start_times = estResults["trials_start_times"]
     trials_end_times = estResults["trials_end_times"]
 
@@ -64,10 +61,11 @@ def main(argv):
         end_times=np.squeeze(trials_end_times),
         n_steps=n_time_steps_CIF)
 
+    transitions_data = pd.read_csv(transitions_data_filename)
     marked_events_times, marked_events_colors, marked_events_markers = \
-        striatumUtils.buildMarkedEventsInfo(
-            trials_timing_info=trials_timing_info,
-            trials_indices=trials_indices,
+        striatumUtils.buildMarkedEventsInfoFromTransitions(
+            transitions_data=transitions_data,
+            trials_ids=trials_ids,
         )
 
     align_event = np.array([marked_events_times[r][0] \
@@ -85,7 +83,7 @@ def main(argv):
             cif_values=cif_values,
             neuron_index=neuron_to_plot,
             spikes_times=spikes_times,
-            trials_indices=trials_indices,
+            trials_ids=trials_ids,
             align_event=align_event,
             marked_events_times=marked_events_times,
             marked_events_colors=marked_events_colors,
