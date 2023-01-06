@@ -1,7 +1,5 @@
 # Scripts to estimate [svGPFA](http://www.github.com/joacorapela/svGPFA) model to ephys recording from the striatum
 
-Please refer to [code/scripts](code/scripts).
-
 To estimate and svGPFA model you could follow these steps:
 
 1. Create epochs for all trials of striatum and motor cortex using [doEpochSpikesTimes.py](code/scripts/doEpochSpikesTimes.py).
