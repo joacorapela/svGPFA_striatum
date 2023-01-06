@@ -167,7 +167,7 @@ def main(argv):
     # trials_start_times = trials_start_times[trials_indices]
     # trials_end_times = trials_end_times[trials_indices]
 
-    breakpoint()
+    # breakpoint()
 
     #    build dynamic parameter specifications
     args_info = svGPFA.utils.initUtils.getArgsInfo()
