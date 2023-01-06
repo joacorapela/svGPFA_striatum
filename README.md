@@ -12,10 +12,10 @@ To estimate and svGPFA model you could follow these steps:
 
 4. Estimate an svGPFA model by changing to the `code/scripts` directory of the repo and running the following command:
 
-```python
-python doEstimageSVGPFA.py 17 --trials_ids_filename ../../results/trialsIDsOfPerfectSecuences.csv
+    ```python
+    python doEstimageSVGPFA.py 17 --trials_ids_filename ../../results/trialsIDsOfPerfectSecuences.csv
+    ```
 
-```
+    where 17 refers to the number of the `ini` file and `--trials_ids_filename` provides the path to the file created in step 3 above.
 
-where 17 refers to the number of the `ini` file and `--trials_ids_filename` provides the path to the file created in step 3 above.
-
+Both [doEpochSpikesTimes.py](code/scripts/doEpochSpikesTimes.py) and [doEstimageSVGPFA.py](code/scripts/doEstimageSVGPFA.py) contains default parameters settings that you may wish to change. To see what these parameters and their default values please invoke these scripts with the `--help` option. For example, [doEstimageSVGPFA.py](code/scripts/doEstimageSVGPFA.py) uses by default 10 latent variables. You may change this default by calling it with the `--n_latents` argument (e.g., ``python doEstimateSVPFA.py --n_latents 15``).
